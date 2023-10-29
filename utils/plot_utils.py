@@ -35,7 +35,7 @@ def plot_tsp(p, x_coord, W, W_val, W_target, title="default"):
                     pairs.append((r, c))
         return pairs
     
-    # G = nx.from_numpy_matrix(W_val) LEGACY
+    # G = nx.from_numpy_array(W_val) LEGACY
     G = nx.from_numpy_array(W_val)
     pos = dict(zip(range(len(x_coord)), x_coord.tolist()))
     adj_pairs = _edges_to_node_pairs(W)
@@ -76,7 +76,7 @@ def plot_tsp_heatmap(p, x_coord, W_val, W_pred, title="default"):
                     edge_preds.append(W[r][c])
         return pairs, edge_preds
         
-    G = nx.from_numpy_matrix(W_val)
+    G = nx.from_numpy_array(W_val)
     pos = dict(zip(range(len(x_coord)), x_coord.tolist()))
     node_pairs, edge_color = _edges_to_node_pairs(W_pred)
     node_color = ['g'] + ['b'] * (len(x_coord) - 1)  # Green for 0th node, blue for others
