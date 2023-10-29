@@ -21,7 +21,7 @@ def loss_nodes(y_pred_nodes, y_nodes, node_cw):
     """
     # Node loss
     y = F.log_softmax(y_pred_nodes, dim=2)  # B x V x voc_nodes_out
-    y = y.permute(0, 2, 1)  # B x voc_nodes x V
+    y = y.permute(0, 2, 1).contiguous()  # B x voc_nodes x V
     loss_nodes = nn.NLLLoss(node_cw)(y, y_nodes)
     return loss_nodes
 
@@ -41,8 +41,9 @@ def loss_edges(y_pred_edges, y_edges, edge_cw):
     """
     # Edge loss
     y = F.log_softmax(y_pred_edges, dim=3)  # B x V x V x voc_edges
-    y = y.permute(0, 3, 1, 2)  # B x voc_edges x V x V
-    loss_edges = nn.NLLLoss(edge_cw)(y, y_edges)
+    y1 = y.permute(0, 3, 1, 2).contiguous()  # B x voc_edges x V x V
+    loss_edges = nn.NLLLoss(edge_cw)(y1, y_edges)
+
     return loss_edges
 
 
@@ -75,10 +76,10 @@ def beamsearch_tour_nodes(y_pred_edges, beam_size, batch_size, num_nodes, dtypeF
         y[y == 0] = -1e-20  # Set 0s (i.e. log(1)s) to very small negative number
     # Perform beamsearch
     beamsearch = Beamsearch(beam_size, batch_size, num_nodes, dtypeFloat, dtypeLong, probs_type, random_start)
-    trans_probs = y.gather(1, beamsearch.get_current_state())
+    trans_probs = y.gather(1, beamsearch.get_current_state().to(torch.int64) )
     for step in range(num_nodes - 1):
         beamsearch.advance(trans_probs)
-        trans_probs = y.gather(1, beamsearch.get_current_state())
+        trans_probs = y.gather(1, beamsearch.get_current_state().to(torch.int64) )
     # Find TSP tour with highest probability among beam_size candidates
     ends = torch.zeros(batch_size, 1).type(dtypeLong)
     return beamsearch.get_hypothesis(ends)
@@ -120,10 +121,10 @@ def beamsearch_tour_nodes_shortest(y_pred_edges, x_edges_values, beam_size, batc
         y[y == 0] = -1e-20  # Set 0s (i.e. log(1)s) to very small negative number
     # Perform beamsearch
     beamsearch = Beamsearch(beam_size, batch_size, num_nodes, dtypeFloat, dtypeLong, probs_type, random_start)
-    trans_probs = y.gather(1, beamsearch.get_current_state())
+    trans_probs = y.gather(1, beamsearch.get_current_state().to(torch.int64) )
     for step in range(num_nodes - 1):
         beamsearch.advance(trans_probs)
-        trans_probs = y.gather(1, beamsearch.get_current_state())
+        trans_probs = y.gather(1, beamsearch.get_current_state().to(torch.int64) )
     # Initially assign shortest_tours as most probable tours i.e. standard beamsearch
     ends = torch.zeros(batch_size, 1).type(dtypeLong)
     shortest_tours = beamsearch.get_hypothesis(ends)

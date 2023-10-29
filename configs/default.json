@@ -22,12 +22,12 @@
   "mlp_layers": 2,
   "aggregation": "mean",
 
-  "max_epochs": 10,
+  "max_epochs": 2,
   "val_every": 5,
   "test_every": 10,
 
-  "batch_size": 20,
-  "batches_per_epoch": 500,
+  "batch_size": 3,
+  "batches_per_epoch": 10,
   "accumulation_steps": 1,
 
   "learning_rate": 0.001,

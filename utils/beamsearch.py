@@ -92,7 +92,7 @@ class Beamsearch(object):
         new_nodes = bestScoresId - prev_k * self.num_nodes
         self.next_nodes.append(new_nodes)
         # Re-index mask
-        perm_mask = prev_k.unsqueeze(2).expand_as(self.mask)  # (batch_size, beam_size, num_nodes)
+        perm_mask = prev_k.unsqueeze(2).expand_as(self.mask).to(torch.int64)  # (batch_size, beam_size, num_nodes)
         self.mask = self.mask.gather(1, perm_mask)
         # Mask newly added nodes
         self.update_mask(new_nodes)
@@ -130,6 +130,6 @@ class Beamsearch(object):
 
         hyp = -1 * torch.ones(self.batch_size, self.num_nodes).type(self.dtypeLong)
         for j in range(len(self.prev_Ks) - 1, -2, -1):
-            hyp[:, j + 1] = self.next_nodes[j + 1].gather(1, k).view(1, self.batch_size)
-            k = self.prev_Ks[j].gather(1, k)
+            hyp[:, j + 1] = self.next_nodes[j + 1].gather(1, k.to(torch.int64) ).view(1, self.batch_size)
+            k = self.prev_Ks[j].gather(1, k.to(torch.int64) )
         return hyp
