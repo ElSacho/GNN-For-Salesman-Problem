@@ -226,6 +226,7 @@ class MLP(nn.Module):
             U.append(nn.Linear(hidden_dim, hidden_dim, True))
         self.U = nn.ModuleList(U)
         self.V = nn.Linear(hidden_dim, output_dim, True)
+        self.output_dim = output_dim
 
     def forward(self, x):
         """
@@ -241,11 +242,9 @@ class MLP(nn.Module):
             Ux = F.relu(Ux)  # B x H
         y = self.V(Ux)  # B x O
         
-        tensors = [y, Ux]
-        for tensor in tensors:
-            if not tensor.is_contiguous():
-                print("A")
-                # Result : ok
+        # Y : (batch_size, n_nodes, n_nodes, n_labels=2)
+        # Y[b,i,j,1] = P(for the graph b in the batch size, the node i is linked to the node j for the TSP)
+        # Y[b,i,j,0] = P(for the graph b in the batch size, the node i is NOT linked to the node j for the TSP)
         
         return y
     
@@ -295,7 +294,7 @@ class MainModel(nn.Module):
 
         # Passing through the hidden layers
         for layer in self.gcn_layers:
-            nodes_features, edges_features = layer(nodes_features, edges_features)
+            nodes_features, edges_features = layer(nodes_features, edges_features)  # (batch_size, number_of_nodes, H)  and # (batch_size, number_of_nodes, number_of_nodes, H)
             tensors = [nodes_features, edges_features]
             for tensor in tensors:
                 if not tensor.is_contiguous():
