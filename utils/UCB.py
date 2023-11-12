@@ -235,39 +235,39 @@ def plot_predictions_UCBsearch(x_nodes_coord, x_edges, x_edges_values, y_edges, 
 
                     
 
-if __name__ == "__main'__":
-    probs = np.eye(4)
-    lengths = np.ones_like(probs)
+# if __name__ == "__main'__":
+probs = np.eye(4)
+lengths = np.ones_like(probs)
 
-    n = 10  # Remplacez 5 par la valeur de votre choix pour la taille du tableau n x n.
+n = 10  # Remplacez 5 par la valeur de votre choix pour la taille du tableau n x n.
 
-    # Générer les indices i et j
-    i, j = np.meshgrid(np.arange(n), np.arange(n))
+# Générer les indices i et j
+i, j = np.meshgrid(np.arange(n), np.arange(n))
 
-    # Calculer le tableau des longueurs
-    lengths = np.abs(i - j)
-    probs = np.exp(lengths)
+# Calculer le tableau des longueurs
+lengths = np.abs(i - j)
+probs = np.exp(lengths)
 
-    probs = 1/probs
+probs = 1/probs
 
-    for i in range(n):
-        probs[i, i] = 0
+for i in range(n):
+    probs[i, i] = 0
 
-    print(probs)
-    print(lengths)
+print(probs)
+print(lengths)
 
-    UCB = UCBTreeSearch(probs, lengths, c=1)
-    min_node, min_lenght_path = UCB.search(100)
-    min_lenght = 0
-    node = min_node
-    while node.father != None:
-        print(node.node_idx, " <- ", end='')
-        min_lenght += lengths[node.node_idx, node.father.node_idx]
-        node = node.father
-    min_lenght += lengths[node.node_idx, min_node.node_idx]
+UCB = UCBTreeSearch(probs, lengths, c=1)
+min_node, min_lenght_path = UCB.search(100)
+min_lenght = 0
+node = min_node
+while node.father != None:
     print(node.node_idx, " <- ", end='')
-    print("min_lenght : ",min_lenght)
-    print(UCB.return_TSP_approx(100))
+    min_lenght += lengths[node.node_idx, node.father.node_idx]
+    node = node.father
+min_lenght += lengths[node.node_idx, min_node.node_idx]
+print(node.node_idx, " <- ", end='')
+print("min_lenght : ",min_lenght)
+print(UCB.return_TSP_approx(100))
 
 
 # Idees : random start pour ajouter un peu de random
