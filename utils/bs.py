@@ -7,6 +7,8 @@ import matplotlib
 import matplotlib.pyplot as plt
 import networkx as nx
 
+from tqdm import tqdm 
+
 # from utils.graph_utils import *
             
 class NodeBeamSearch():
@@ -112,7 +114,7 @@ class BeamSearch():
             self.max_lenght = lenght
         
     def search(self, max_trials):
-        for _ in range(max_trials):
+        for _ in tqdm(range(max_trials)):
             self.one_search()
         return self.min_node, self.min_lenght
             
@@ -133,6 +135,7 @@ def beamSearch_with_batch(probs, edges, max_trials= 10_000, c=1):
     batch_size = probs.shape[0]
     TSP_return = torch.zeros_like(edges)
     for i in range(batch_size):
+        print("Batch Beam Search number : ", i,' on ', batch_size)
         TS = BeamSearch(probs[i], edges[i], c)
         TSP_appro_i = TS.return_TSP_approx(max_trials)
         TSP_return[i] = torch.tensor(TSP_appro_i)

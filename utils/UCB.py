@@ -244,12 +244,83 @@ def plot_predictions_UCBsearch(x_nodes_coord, x_edges, x_edges_values, y_edges, 
         # W_bs = tour_nodes_to_W(UCB_nodes[idx].cpu().numpy())
         W_bs = UCB_nodes[idx].cpu().numpy()
         plt1 = f.add_subplot(131)
-        plot_tsp(plt1, x_coord, W, W_val, W_target, 'Groundtruth: {:.3f}'.format(calculate_tour_length(W_target, W_val)))
+        tour_opt = calculate_tour_length(W_target, W_val)
+        plot_tsp(plt1, x_coord, W, W_val, W_target, 'Groundtruth: {:.3f}'.format(tour_opt))
         plt2 = f.add_subplot(132)
         plot_tsp_heatmap(plt2, x_coord, W_val, W_sol_probs, 'Prediction Heatmap')
         plt3 = f.add_subplot(133)
         plot_tsp(plt3, x_coord, W, W_val, W_bs, 'UCB Search: {:.3f}'.format(calculate_tour_length(W_bs, W_val)))
         plt.show()
+        
+        
+def plot_predictions_two_methods(x_nodes_coord, x_edges, x_edges_values, y_edges, y_pred_edges, UCB_nodes, bs_nodes, num_plots=4):
+    """
+    Plots groundtruth TSP tour vs. predicted tours (with beamsearch).
+    
+    Args:
+        x_nodes_coord: Input node coordinates (batch_size, num_nodes, node_dim)
+        x_edges: Input edge adjacency matrix (batch_size, num_nodes, num_nodes)
+        x_edges_values: Input edge distance matrix (batch_size, num_nodes, num_nodes)
+        y_edges: Groundtruth labels for edges (batch_size, num_nodes, num_nodes)
+        y_pred_edges: Predictions for edges (batch_size, num_nodes, num_nodes)
+        bs_nodes: Predicted node ordering in TSP tours after beamsearch (batch_size, num_nodes)
+        num_plots: Number of figures to plot
+    
+    """
+    y = F.softmax(y_pred_edges, dim=3)  # B x V x V x voc_edges
+    y_bins = y.argmax(dim=3)  # Binary predictions: B x V x V
+    y_probs = y[:,:,:,1]  # Prediction probabilities: B x V x V
+    for f_idx, idx in enumerate(np.random.choice(len(y), num_plots, replace=False)):
+        f = plt.figure(f_idx, figsize=(20, 5))
+        x_coord = x_nodes_coord[idx].cpu().numpy()
+        W = x_edges[idx].cpu().numpy()
+        W_val = x_edges_values[idx].cpu().numpy()
+        W_target = y_edges[idx].cpu().numpy()
+        W_sol_bins = y_bins[idx].cpu().numpy()
+        W_sol_probs = y_probs[idx].cpu().numpy()
+        W_UCB = UCB_nodes[idx].cpu().numpy()
+        W_bs = bs_nodes[idx].cpu().numpy()
+
+        # Place all subplots on the same row
+        plt1 = f.add_subplot(141)
+        tour_opt = calculate_tour_length(W_target, W_val)
+        plot_tsp(plt1, x_coord, W, W_val, W_target, 'Groundtruth: {:.3f}'.format(tour_opt))
+
+        plt2 = f.add_subplot(142)
+        plot_tsp_heatmap(plt2, x_coord, W_val, W_sol_probs, 'Prediction Heatmap')
+
+        plt3 = f.add_subplot(143)
+        plot_tsp(plt3, x_coord, W, W_val, W_UCB, 'UCB Search: {:.3f}'.format(calculate_tour_length(W_UCB, W_val)))
+
+        plt4 = f.add_subplot(144)
+        plot_tsp(plt4, x_coord, W, W_val, W_bs, 'Beam Search: {:.3f}'.format(calculate_tour_length(W_bs, W_val)))
+
+        plt.show()
+
+    
+def compute_optimal_tour_lenght(x_edges_values, y_edges, y_pred_edges, UCB_nodes):
+    y = F.softmax(y_pred_edges, dim=3)  # B x V x V x voc_edges
+    y_bins = y.argmax(dim=3)  # Binary predictions: B x V x V
+    y_probs = y[:,:,:,1]  # Prediction probabilities: B x V x V
+    min_solver_length = np.zeros(len(y))
+    tour_found_tab = np.zeros(len(y))
+    for idx in range(len(y)):
+        
+        # x_coord = x_nodes_coord[idx].cpu().numpy()
+        # W = x_edges[idx].cpu().numpy()
+        W_val = x_edges_values[idx].cpu().numpy()
+        W_target = y_edges[idx].cpu().numpy()
+        W_bs = UCB_nodes[idx].cpu().numpy()
+        
+        tour_opt = calculate_tour_length(W_target, W_val)
+        min_solver_length[idx] = tour_opt
+        
+        tour_found = calculate_tour_length(W_bs, W_val)
+        tour_found_tab[idx] = tour_found
+        
+    gap_opt = np.mean(tour_found_tab / min_solver_length - 1)
+    return gap_opt
+    # print("The gap to optimality is ", gap_opt)
         
 
 

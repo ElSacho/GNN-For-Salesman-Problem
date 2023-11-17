@@ -7,6 +7,8 @@ import matplotlib
 import matplotlib.pyplot as plt
 import networkx as nx
 
+from tqdm import tqdm
+
 # from utils.graph_utils import *
             
 class NodeUCBTS():
@@ -98,13 +100,13 @@ class UCBTreeSearch():
             self.max_lenght = lenght
         
     def search(self, max_trials):
-        for _ in range(max_trials):
+        for _ in tqdm(range(max_trials)):
             self.one_search()
         return self.min_node, self.min_lenght
             
                 
     def return_TSP_approx(self, max_trials):
-        min_node, min_lenght = self.search(max_trials)
+        min_node, min_length = self.search(max_trials)
         tsp_approx = np.zeros_like(min_node.probs)
         node = min_node
         while node.father != None:
@@ -115,17 +117,14 @@ class UCBTreeSearch():
         tsp_approx[min_node.node_idx, node.node_idx] = 1
         return tsp_approx
     
-def UCBSearch_with_batch_UCB2(probs, edges, max_trials= 10_000, c=1):
+def UCBSearch_with_batch_UCB2(probs, edges, max_trials = 1_000, c=1):
     batch_size = probs.shape[0]
     TSP_return = torch.zeros_like(edges)
     for i in range(batch_size):
-        print('begin')
-        print(edges)
+        print("Batch UCB number : ", i,' on ', batch_size)
         TS = UCBTreeSearch(probs[i], edges[i], c)
         TSP_appro_i = TS.return_TSP_approx(max_trials)
         TSP_return[i] = torch.tensor(TSP_appro_i)
-        print('end')
-        print(edges)
     return TSP_return
         
 
