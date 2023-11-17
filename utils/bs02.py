@@ -9,6 +9,8 @@ import networkx as nx
 
 from tqdm import tqdm 
 
+import random
+
 # from utils.graph_utils import *
             
 class NodeBeamSearch():
@@ -61,48 +63,36 @@ class NodeBeamSearch():
     def compute_temperature(self, tau):
         if self.father != None : 
             self.temp_prob = self.probs[self.node_idx, self.father.node_idx]**(1/tau) / sum(self.probs[:, self.father.node_idx]**(1/tau))
-    
-    # def update_values(self, lenght_path):
-    #     if self.father != None:
-    #         # self.UCB_value = np.sqrt(self.father.n_exploration) / (1 + self.n_exploration) * self.probs[self.node_idx, self.father.node_idx]
-    #         self.UCB_value = np.sqrt(self.father.n_exploration) / (1 + self.n_exploration) * self.temp_prob
-    #         self.average_value = (self.average_value * self.n_exploration + lenght_path)/(self.n_exploration+1)
-    #         if self.root.max_lenght - self.root.min_lenght != 0:
-    #             self.node_value = (self.average_value - self.root.min_lenght)/(self.root.max_lenght - self.root.min_lenght) - self.UCB_value 
-    #         else : 
-    #             self.node_value = (self.average_value - self.root.min_lenght)/(self.root.max_lenght) - self.UCB_value 
-    #         self.n_exploration += 1
 
-    #         self.father.children_values[self.node_idx] = self.node_value
-    #         self.father.update_values(lenght_path)
-    #     else : 
-    #         # print(lenght_path)
-    #         pass
                        
 class BeamSearch():
-    def __init__(self, probs, lengths, c , start_idx = 0): # probs is an n x n np array st probs[i,j] = proba qu il y ait un lien entre les deux 
+    def __init__(self, probs, lengths, c ): # probs is an n x n np array st probs[i,j] = proba qu il y ait un lien entre les deux 
         num_nodes, _ = probs.shape
+        self.num_nodes = num_nodes
         self.lengths = lengths
         self.num_nodes = num_nodes
         self.c = c / (2*num_nodes)
-        self.start_idx = start_idx
-        self.next_possible_states = [i for i in range(num_nodes) if i != start_idx]
-        self.children_values = {i : probs[start_idx, i] for i in self.next_possible_states} # we build the values for all of the next possible children
+        self.roots = []
         actual_lenght = 1
         self.min_lenght = -1
         self.max_lenght = 0
-        self.root = NodeBeamSearch(self.next_possible_states, None, start_idx, probs, c/num_nodes, lengths, actual_lenght, 1, self)   
-
+        for idx in range(num_nodes):
+            next_possible_states = [i for i in range(num_nodes) if i != idx]
+            self.children_values = {i : probs[idx, i] for i in next_possible_states} # we build the values for all of the next possible children
+            self.roots.append(NodeBeamSearch(next_possible_states, None, idx, probs, c/num_nodes, lengths, actual_lenght, 1, self))   
+    def choose_root(self):
+        return self.roots[random.randint(0, self.num_nodes-1)]
+    
     def one_search(self):
-        next_children = self.root.choose_next_children()
-        node = self.root.get_children(next_children)
-        lenght_path = self.lengths[self.start_idx, node.node_idx].item()
-        for _ in range(self.num_nodes - 2):
+        node = self.choose_root()
+        root_idx = node.node_idx
+        lenght_path = 0
+        for _ in range(self.num_nodes - 1):
             next_children = node.choose_next_children()
             node_idx = node.node_idx
             node = node.get_children(next_children)
             lenght_path += self.lengths[node_idx, node.node_idx].item()
-        lenght_path += self.lengths[self.start_idx, node.node_idx].item()
+        lenght_path += self.lengths[root_idx, node.node_idx].item()
         self.update_min_max(lenght_path, node)
         # node.update_values(lenght_path)
     
@@ -131,7 +121,7 @@ class BeamSearch():
         tsp_approx[min_node.node_idx, node.node_idx] = 1
         return tsp_approx
     
-def beamSearch_with_batch(probs, edges, max_trials= 10_000, c=1):
+def beamSearch_with_batch02(probs, edges, max_trials= 10_000, c=1):
     batch_size = probs.shape[0]
     TSP_return = torch.zeros_like(edges)
     for i in range(batch_size):
