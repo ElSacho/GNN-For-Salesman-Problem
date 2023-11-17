@@ -37,7 +37,7 @@ class NodeUCBTS():
     def get_children(self, children_idx):
         if self.children[children_idx] == None:
             next_possible_children = [i for i in self.next_possible_children if i!=children_idx]
-            next_lenght = self.actual_lenght + self.lengths[self.node_idx, children_idx]
+            next_lenght = self.actual_lenght + self.lengths[self.node_idx, children_idx].item()
             next_lenght = self.actual_lenght * self.probs[self.node_idx, children_idx]
             self.children[children_idx] = NodeUCBTS(next_possible_children, self, children_idx, self.probs, self.c, self.lengths, next_lenght, self.depth + 1, self.root) 
         return self.children[children_idx]
@@ -80,13 +80,13 @@ class UCBTreeSearch():
     def one_search(self):
         next_children = self.root.choose_next_children()
         node = self.root.get_children(next_children)
-        lenght_path = self.lengths[self.start_idx, node.node_idx]
+        lenght_path = self.lengths[self.start_idx, node.node_idx].item()
         for _ in range(self.num_nodes - 2):
             next_children = node.choose_next_children()
             node_idx = node.node_idx
             node = node.get_children(next_children)
-            lenght_path += self.lengths[node_idx, node.node_idx]
-        lenght_path += self.lengths[self.start_idx, node.node_idx]
+            lenght_path += self.lengths[node_idx, node.node_idx].item()
+        lenght_path += self.lengths[self.start_idx, node.node_idx].item()
         self.update_min_max(lenght_path, node)
         node.update_values(lenght_path)
     
@@ -119,57 +119,61 @@ def UCBSearch_with_batch_UCB2(probs, edges, max_trials= 10_000, c=1):
     batch_size = probs.shape[0]
     TSP_return = torch.zeros_like(edges)
     for i in range(batch_size):
+        print('begin')
+        print(edges)
         TS = UCBTreeSearch(probs[i], edges[i], c)
         TSP_appro_i = TS.return_TSP_approx(max_trials)
         TSP_return[i] = torch.tensor(TSP_appro_i)
+        print('end')
+        print(edges)
     return TSP_return
         
 
 
-# if __name__ == "__main'__":
-probs = np.eye(4)
-lengths = np.ones_like(probs)
+if __name__ == "__main'__":
+    probs = np.eye(4)
+    lengths = np.ones_like(probs)
 
-n = 10  # Remplacez 5 par la valeur de votre choix pour la taille du tableau n x n.
+    n = 10  # Remplacez 5 par la valeur de votre choix pour la taille du tableau n x n.
 
-# Générer les indices i et j
-i, j = np.meshgrid(np.arange(n), np.arange(n))
+    # Générer les indices i et j
+    i, j = np.meshgrid(np.arange(n), np.arange(n))
 
-# Calculer le tableau des longueurs
-lengths = np.abs(i - j)
-probs = np.exp(lengths)
+    # Calculer le tableau des longueurs
+    lengths = np.abs(i - j)
+    probs = np.exp(lengths)
 
-probs = 1/probs
+    probs = 1/probs
 
-for i in range(n):
-    probs[i, i] = 0
+    for i in range(n):
+        probs[i, i] = 0
 
-# print(probs)
-# print(lengths)
+    # print(probs)
+    # print(lengths)
 
-UCB = UCBTreeSearch(probs, lengths, c=1)
-# min_node, min_lenght_path = UCB.search(100)
-# min_lenght = 0
-# node = min_node
-# while node.father != None:
-#     print(node.node_idx, " <- ", end='')
-#     min_lenght += lengths[node.node_idx, node.father.node_idx]
-#     node = node.father
-# min_lenght += lengths[node.node_idx, min_node.node_idx]
-# print(node.node_idx, " <- ", end='')
-# print("min_lenght : ",min_lenght)
-# print(UCB.min_lenght)
+    UCB = UCBTreeSearch(probs, lengths, c=1)
+    # min_node, min_lenght_path = UCB.search(100)
+    # min_lenght = 0
+    # node = min_node
+    # while node.father != None:
+    #     print(node.node_idx, " <- ", end='')
+    #     min_lenght += lengths[node.node_idx, node.father.node_idx]
+    #     node = node.father
+    # min_lenght += lengths[node.node_idx, min_node.node_idx]
+    # print(node.node_idx, " <- ", end='')
+    # print("min_lenght : ",min_lenght)
+    # print(UCB.min_lenght)
 
-# min_lenght = 0
-# node = UCB.min_node
-# while node.father != None:
-#     print(node.node_idx, " <- ", end='')
-#     min_lenght += lengths[node.node_idx, node.father.node_idx]
-#     node = node.father
-# min_lenght += lengths[node.node_idx, min_node.node_idx]
-# print(node.node_idx, " <- ", end='')
-# print("min_lenght : ",min_lenght)
-UCB.return_TSP_approx(1)
+    # min_lenght = 0
+    # node = UCB.min_node
+    # while node.father != None:
+    #     print(node.node_idx, " <- ", end='')
+    #     min_lenght += lengths[node.node_idx, node.father.node_idx]
+    #     node = node.father
+    # min_lenght += lengths[node.node_idx, min_node.node_idx]
+    # print(node.node_idx, " <- ", end='')
+    # print("min_lenght : ",min_lenght)
+    UCB.return_TSP_approx(1)
 
 
-# Idees : random start pour ajouter un peu de random
+    # Idees : random start pour ajouter un peu de random

@@ -36,21 +36,22 @@ class NodeBeamSearch():
         return random_children
     
     def compute_next_children_proba(self):
-        next_proba = np.zeros(self.probs[0])
+        n_nodes, _ = self.probs.shape
+        next_proba = np.zeros(n_nodes)
         for i in self.next_possible_children:
             next_proba[i] = self.probs[i, self.node_idx]
-        sum_proba = np.sum(self.next_proba)
+        sum_proba = np.sum(next_proba)
         if sum_proba != 0:
             next_proba /= sum_proba
             return next_proba
         for i in self.next_possible_children:
-            self.next_proba[i] = 1/self.probs[0]
+            next_proba[i] = 1/n_nodes
         return next_proba
             
     def get_children(self, children_idx):
         if self.children[children_idx] == None:
             next_possible_children = [i for i in self.next_possible_children if i!=children_idx]
-            next_lenght = self.actual_lenght + self.lengths[self.node_idx, children_idx]
+            next_lenght = self.actual_lenght + self.lengths[self.node_idx, children_idx].item()
             next_lenght = self.actual_lenght * self.probs[self.node_idx, children_idx]
             self.children[children_idx] = NodeBeamSearch(next_possible_children, self, children_idx, self.probs, self.c, self.lengths, next_lenght, self.depth + 1, self.root) 
         return self.children[children_idx]
@@ -93,13 +94,13 @@ class BeamSearch():
     def one_search(self):
         next_children = self.root.choose_next_children()
         node = self.root.get_children(next_children)
-        lenght_path = self.lengths[self.start_idx, node.node_idx]
+        lenght_path = self.lengths[self.start_idx, node.node_idx].item()
         for _ in range(self.num_nodes - 2):
             next_children = node.choose_next_children()
             node_idx = node.node_idx
             node = node.get_children(next_children)
-            lenght_path += self.lengths[node_idx, node.node_idx]
-        lenght_path += self.lengths[self.start_idx, node.node_idx]
+            lenght_path += self.lengths[node_idx, node.node_idx].item()
+        lenght_path += self.lengths[self.start_idx, node.node_idx].item()
         self.update_min_max(lenght_path, node)
         # node.update_values(lenght_path)
     
@@ -132,7 +133,7 @@ def beamSearch_with_batch(probs, edges, max_trials= 10_000, c=1):
     batch_size = probs.shape[0]
     TSP_return = torch.zeros_like(edges)
     for i in range(batch_size):
-        TS = NodeBeamSearch(probs[i], edges[i], c)
+        TS = BeamSearch(probs[i], edges[i], c)
         TSP_appro_i = TS.return_TSP_approx(max_trials)
         TSP_return[i] = torch.tensor(TSP_appro_i)
     return TSP_return
