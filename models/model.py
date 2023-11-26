@@ -315,6 +315,40 @@ class MainModel(nn.Module):
                 # RESULT : OK
         
         return y_pred_edges, loss
+    
+    def forward_without_train(self, nodes_coord, edges_dist, edges_k_means):
+        """_summary_
+
+        Args:
+            nodes_coord (tensor): (batch_size, number_of_nodes, 2)
+            edges_dist (tensor): edge distance matrix (batch_size, num_nodes, num_nodes)
+            edges_k_means (tensor) : k_nearest value for edges tensor (batch_size, num_nodes, num_nodes)
+            
+        Returns:
+            y_pred_edges: Output predictions (batch_size, output_dim)
+        """
+        # Encoding the values        
+        nodes_features = self.NodesEncoding(nodes_coord) # (batch_size, number_of_nodes, H) embedding of the nodes (equation 2 of the paper)
+        edges_features = self.EdgesEncoding(edges_dist, edges_k_means) # (batch_size, number_of_nodes, number_of_nodes, H) embedding of the nodes (equation 3 of the paper)
+        tensors = [nodes_features, edges_features]
+        for tensor in tensors:
+            if not tensor.is_contiguous():
+                print("A")
+
+
+        # Passing through the hidden layers
+        for layer in self.gcn_layers:
+            nodes_features, edges_features = layer(nodes_features, edges_features)  # (batch_size, number_of_nodes, H)  and # (batch_size, number_of_nodes, number_of_nodes, H)
+            tensors = [nodes_features, edges_features]
+            for tensor in tensors:
+                if not tensor.is_contiguous():
+                    print("A")
+                    # Result OK
+
+        # Get the probability graph 
+        y_pred_edges = self.mlp_edges(edges_features)
+        
+        return y_pred_edges
         
 
         
