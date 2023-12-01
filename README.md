@@ -2,7 +2,7 @@
 
 Project realised for the course "Geometrical Data Analysis" from Jean Feydy during the first semester of the MVA 2023-2024.
 The goal was to produce a report on the paper "An Efficient Graph Convolutional Network Technique for the Travelling Salesman Problem", Chaitanya K. Joshi, Thomas Laurent, Xavier Bresson, https://arxiv.org/abs/1906.01227
-In this report, we tried to go beyond the subject trying new methods based on bandit theory to find the shortest tour of a TSP. 
+In this report, we tried to go beyond the subject implementing new methods based on bandit theory to find the shortest tour of a TSP. 
 
 ## Overview
 
@@ -14,7 +14,7 @@ This repository explores a framework for obtaining sub-optimal solutions for the
 
 1. **Graph Neural Network Training:** We train a graph neural network on TSP instances with fixed sizes. The network predicts the probability of each edge being included in the optimal TSP solution, effectively learning the underlying patterns in the data.
 
-2. **Path Optimization:** Using the probabilities obtained from the neural network, we employ a non-autoregressive model for searching optimal paths. The model is designed to efficiently scale to larger graphs, addressing the challenges posed by the NP-hard nature of TSP.
+2. **Path Optimization:** Using the probabilities obtained from the neural network, we implemented sevaral decoding strategies to find the shortest path. 
 
 ## Methodology
 
