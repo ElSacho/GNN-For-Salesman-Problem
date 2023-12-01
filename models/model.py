@@ -171,12 +171,6 @@ class BatchNormEdges(nn.Module):
         e_f_trans_bn = self.batch_norm(e_f_trans) # (batch_size, hidden_dim, num_nodes, num_nodes)
         e_f_bn = e_f_trans_bn.transpose(1, 3).contiguous()  # (batch_size, num_nodes, num_nodes, hidden_dim)
         
-        tensors = [edges_features_W3, node_features_W4, node_features_W5, e_f, e_f_trans, e_f_trans_bn, e_f_bn]
-        for tensor in tensors:
-            if not tensor.is_contiguous():
-                print("A")
-                # Result : ok
-        
         return e_f_bn
         
 # Implement equation (4) & (5)
@@ -207,12 +201,6 @@ class HiddenLayer(nn.Module):
         
         nodes_features = nodes_features + F.relu(bn_nodes)
         edges_features = edges_features + F.relu(bn_edges)
-        
-        tensors = [bn_nodes, bn_edges, nodes_features, edges_features]
-        for tensor in tensors:
-            if not tensor.is_contiguous():
-                print("A")
-                # result : OK
                 
         return nodes_features, edges_features
 
@@ -283,36 +271,29 @@ class MainModel(nn.Module):
         Returns:
             y_pred_edges: Output predictions (batch_size, output_dim)
         """
+        if torch.cuda.is_available():
+            dtypeFloat = torch.cuda.FloatTensor
+            dtypeLong = torch.cuda.LongTensor
+            torch.cuda.manual_seed(1)
+        else:
+            dtypeFloat = torch.FloatTensor
+            dtypeLong = torch.LongTensor
+            torch.manual_seed(1)
+        
         # Encoding the values        
         nodes_features = self.NodesEncoding(nodes_coord) # (batch_size, number_of_nodes, H) embedding of the nodes (equation 2 of the paper)
         edges_features = self.EdgesEncoding(edges_dist, edges_k_means) # (batch_size, number_of_nodes, number_of_nodes, H) embedding of the nodes (equation 3 of the paper)
-        tensors = [nodes_features, edges_features]
-        for tensor in tensors:
-            if not tensor.is_contiguous():
-                print("A")
-
 
         # Passing through the hidden layers
         for layer in self.gcn_layers:
             nodes_features, edges_features = layer(nodes_features, edges_features)  # (batch_size, number_of_nodes, H)  and # (batch_size, number_of_nodes, number_of_nodes, H)
-            tensors = [nodes_features, edges_features]
-            for tensor in tensors:
-                if not tensor.is_contiguous():
-                    print("A")
-                    # Result OK
 
         # Get the probability graph 
         y_pred_edges = self.mlp_edges(edges_features)
         y_edges = y_edges.long()
     
-        edge_cw = torch.Tensor(edge_cw).type(torch.FloatTensor)  # Convert to tensors
+        edge_cw = torch.Tensor(edge_cw).type(dtypeFloat)  # Convert to tensors
         loss = loss_edges(y_pred_edges, y_edges, edge_cw)
-        
-        tensors = [y_pred_edges, loss]
-        for tensor in tensors:
-            if not tensor.is_contiguous():
-                print("A")
-                # RESULT : OK
         
         return y_pred_edges, loss
     
@@ -330,20 +311,10 @@ class MainModel(nn.Module):
         # Encoding the values        
         nodes_features = self.NodesEncoding(nodes_coord) # (batch_size, number_of_nodes, H) embedding of the nodes (equation 2 of the paper)
         edges_features = self.EdgesEncoding(edges_dist, edges_k_means) # (batch_size, number_of_nodes, number_of_nodes, H) embedding of the nodes (equation 3 of the paper)
-        tensors = [nodes_features, edges_features]
-        for tensor in tensors:
-            if not tensor.is_contiguous():
-                print("A")
-
 
         # Passing through the hidden layers
         for layer in self.gcn_layers:
             nodes_features, edges_features = layer(nodes_features, edges_features)  # (batch_size, number_of_nodes, H)  and # (batch_size, number_of_nodes, number_of_nodes, H)
-            tensors = [nodes_features, edges_features]
-            for tensor in tensors:
-                if not tensor.is_contiguous():
-                    print("A")
-                    # Result OK
 
         # Get the probability graph 
         y_pred_edges = self.mlp_edges(edges_features)
